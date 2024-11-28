@@ -8,14 +8,18 @@ app = Flask(__name__)
 CORS(app)
 
 # Configuración de logs
-logging.basicConfig(filename="C:\\knime_api_project\\execution_logs.txt", level=logging.INFO,
+logging.basicConfig(filename=os.path.join(os.getcwd(), "execution_logs.txt"), level=logging.INFO,
                     format="%(asctime)s - %(levelname)s - %(message)s")
 
-# Ruta del directorio donde se encuentran los archivos batch
-BATCH_DIR = r"C:\knime_api_project"
+# Carga de variables de entorno
+KNIME_PATH = os.environ.get('KNIME_PATH', r"C:\Users\alejandro.valinotti\AppData\Local\Programs\KNIME\knime.exe")
+# Configuración del directorio de workflows
+WORKFLOW_DIR = os.environ.get('WORKFLOW_DIR', './knime_api_project')
+
 
 @app.route('/run-batch', methods=['POST'])
 def run_batch():
+    # Obtener nombre del batch desde el cuerpo de la solicitud
     data = request.get_json()
     batch_name = data.get('batch_name')
 
@@ -26,7 +30,7 @@ def run_batch():
         return jsonify({"status": "error", "message": "El parámetro 'batch_name' es obligatorio."}), 400
 
     # Validar existencia del archivo batch
-    batch_file_path = os.path.join(BATCH_DIR, f"{batch_name}.bat")
+    batch_file_path = os.path.join(WORKFLOW_DIR, f"{batch_name}.bat")
     if not os.path.isfile(batch_file_path):
         logging.error(f"No se encontró el archivo batch: {batch_file_path}")
         print(f"ERROR: No se encontró el archivo batch: {batch_file_path}")  # En consola
@@ -53,6 +57,15 @@ def run_batch():
         print(f"ERROR: Error inesperado: {str(e)}")  # En consola
         return jsonify({"status": "error", "message": "Error inesperado al ejecutar el archivo batch"}), 500
 
+@app.route('/env-vars', methods=['GET'])
+def get_env_vars():
+    """Endpoint de prueba para verificar las variables de entorno."""
+    return jsonify({
+        "KNIME_PATH": KNIME_PATH,
+        "WORKFLOW_DIR": WORKFLOW_DIR
+    })
+
 if __name__ == '__main__':
-    print("INFO: API corriendo en http://0.0.0.0:5000")  # En consola
-    app.run(host='0.0.0.0', port=5000)
+    PORT = int(os.environ.get('PORT', 5000))  # Permitir configuración del puerto desde variables de entorno
+    print(f"INFO: API corriendo en http://0.0.0.0:{PORT}")  # En consola
+    app.run(host='0.0.0.0', port=PORT)
