@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ejecutar Workflows de KNIME</title>
+    <style>
+        /* Estilos de la página */
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            height: 100%;
+            background: #2a2a4a;
+            color: #fff;
+            font-family: Arial, sans-serif;
+        }
+
+        .container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.7);
+            padding: 40px;
+            border-radius: 10px;
+            text-align: center;
+            max-width: 400px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            z-index: 1;
+        }
+
+        h1 {
+            font-size: 24px;
+            color: #ffffff;
+            margin-bottom: 20px;
+        }
+
+        .button {
+            background-color: #6a0dad;
+            color: #fff;
+            border: none;
+            padding: 15px 20px;
+            margin: 10px 0;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        #output {
+            margin-top: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            color: #fff;
+            min-height: 20px;
+        }
+
+        #username, #password {
+            padding: 10px;
+            margin-bottom: 15px;
+            width: 100%;
+            font-size: 14px;
+        }
+
+        #execution-container {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Contenedor de autenticación -->
+    <div class="container" id="auth-container">
+        <h1>Autenticación</h1>
+        <input type="text" id="username" placeholder="Ingrese su nombre de usuario" />
+        <input type="password" id="password" placeholder="Ingrese su contraseña" />
+        <button class="button" onclick="authenticateUser()">Iniciar Sesión</button>
+        <div id="auth-output"></div>
+    </div>
+
+    <!-- Contenedor de ejecución -->
+    <div class="container" id="execution-container">
+        <h1>Ejecutar Workflows de KNIME</h1>
+        <button id="executeBtn" class="button" onclick="executeBatch('ejecutar')">Ejecutar Batch 'ejecutar'</button>
+        <button id="executeParamBtn" class="button" onclick="executeBatch('ejecutar-parametro')">Ejecutar Batch 'ejecutar-parametro'</button>
+        <div id="output"></div>
+    </div>
+
+    <script>
+        // Autenticación del usuario antes de mostrar la interfaz de ejecución
+        async function authenticateUser() {
+            const authOutput = document.getElementById('auth-output');
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+
+            if (!username || !password) {
+                authOutput.innerHTML = "Por favor, ingrese su nombre de usuario y contraseña.";
+                return;
+            }
+
+            authOutput.innerHTML = "Autenticando...";
+
+            try {
+                const response = await fetch('http://192.168.151.30:5000/authenticate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ user: username, password: password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.status === "success") {
+                    document.getElementById('auth-container').style.display = 'none';
+                    document.getElementById('execution-container').style.display = 'block';
+                    authOutput.innerHTML = "";
+                } else {
+                    authOutput.innerHTML = `Acceso denegado: ${data.message}`;
+                }
+            } catch (error) {
+                authOutput.innerHTML = `Error de conexión: ${error.message}`;
+            }
+        }
+
+        // Ejecución de workflow
+        async function executeBatch(batchName) {
+            const output = document.getElementById('output');
+            const username = document.getElementById('username').value.trim();
+
+            output.innerHTML = `<div class="loader"></div> Ejecutando...`;
+
+            try {
+                const response = await fetch('http://192.168.151.30:5000/run-workflow', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ batch_name: batchName, user: username })
+                });
+
+                const data = await response.json();
+
+                output.innerHTML = data.status === "success" ? `✅ Ejecución exitosa` : `❌ Ejecución fallida: ${data.message}`;
+            } catch (error) {
+                output.innerHTML = `❌ Ejecución fallida: ${error.message}`;
+            }
+        }
+    </script>
+
+</body>
+</html>

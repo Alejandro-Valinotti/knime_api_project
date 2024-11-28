@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ejecutar Workflows de KNIME</title>
+    <style>
+        /* Estilos de la página */
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            height: 100%;
+            background: #2a2a4a; /* Fondo oscuro */
+            color: #fff;
+            font-family: Arial, sans-serif;
+        }
+
+        .container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.7);
+            padding: 40px;
+            border-radius: 10px;
+            text-align: center;
+            max-width: 400px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            z-index: 1;
+        }
+
+        h1 {
+            font-size: 24px;
+            color: #ffffff;
+            margin-bottom: 20px;
+        }
+
+        .button {
+            background-color: #6a0dad;
+            color: #fff;
+            border: none;
+            padding: 15px 20px;
+            margin: 10px 0;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .button[disabled] {
+            background-color: #444;
+            cursor: not-allowed;
+        }
+
+        #output {
+            margin-top: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            color: #fff;
+            min-height: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Ejecutar Workflows de KNIME</h1>
+        
+        <!-- Botones para ejecutar workflows -->
+        <button id="executeBtn" class="button" onclick="executeBatch('ejecutar')">Ejecutar Flujo 'ejecutar'</button>
+        <button id="executeParamBtn" class="button" onclick="executeBatch('ejecutar-parametro')">Ejecutar Flujo 'ejecutar-parametro'</button>
+
+        <!-- Área para mostrar el resultado -->
+        <div id="output"></div>
+    </div>
+
+    <script>
+        // Tiempo de espera entre ejecuciones en milisegundos (15 minutos)
+        const WAIT_TIME = 900000;
+
+        // Función para ejecutar el batch con bloqueo de tiempo y logging
+        async function executeBatch(batchName) {
+            const output = document.getElementById('output');
+            const button = batchName === 'ejecutar' ? document.getElementById('executeBtn') : document.getElementById('executeParamBtn');
+
+            // Deshabilitar el botón para evitar múltiples clics
+            button.disabled = true;
+            output.innerHTML = `<div class="loader"></div> Ejecutando...`;
+
+            // Log de inicio de la ejecución
+            logAction(`Inicio de ejecución del workflow: ${batchName}`);
+
+            try {
+                // Llamada a la API
+                const response = await fetch('http://192.168.151.30:443/run-workflow', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ batch_name: batchName })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Error en la respuesta del servidor: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                if (data.status === "success") {
+                    output.innerHTML = `✅ Ejecución exitosa`;
+                    logAction(`Ejecución exitosa para el workflow: ${batchName}`);
+                } else {
+                    output.innerHTML = `❌ Ejecución fallida`;
+                    logAction(`Error en la ejecución del workflow: ${batchName}`);
+                }
+            } catch (error) {
+                output.innerHTML = `❌ Ejecución fallida`;
+                logAction(`Error de conexión o ejecución: ${error.message}`);
+            } finally {
+                // Reactivar el botón después del tiempo de espera
+                setTimeout(() => {
+                    button.disabled = false;
+                    logAction(`El botón "${batchName}" está listo para otra ejecución.`);
+                }, WAIT_TIME);
+            }
+        }
+
+        // Función de logging (en la consola del navegador)
+        function logAction(message) {
+            const timestamp = new Date().toLocaleString();
+            console.log(`[${timestamp}] ${message}`);
+        }
+    </script>
+
+</body>
+</html>

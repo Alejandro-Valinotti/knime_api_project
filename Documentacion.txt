@@ -1,0 +1,30 @@
+Descripción
+Esta API permite la ejecución de flujos de trabajo de KNIME mediante archivos batch predefinidos. La API recibe el nombre del archivo batch como parámetro y lo ejecuta, permitiendo así la ejecución dinámica de distintos flujos de trabajo ubicados en C:\knime_api_project.
+
+Estructura de la API
+Endpoint: /run-workflow
+Método: POST
+Cuerpo de la solicitud: JSON con el parámetro "batch_name" que corresponde al nombre del archivo batch (sin la extensión .bat) que se desea ejecutar.
+Ejemplos de Uso con curl
+Ejecución de un flujo de trabajo específico (API_TEST)
+
+
+curl -X POST "http://127.0.0.1:5000/run-workflow" -H "Content-Type: application/json" -d "{\"batch_name\": \"API_TEST\"}"
+
+Descripción: Este comando ejecuta el archivo API_TEST.bat en la ruta C:\knime_api_project.
+Resultado esperado: Se ejecuta el flujo de trabajo definido en el archivo .knwf asociado y se devuelve el resultado o mensaje de error si ocurre alguno.
+Ejecución de otro flujo de trabajo (OTRO_FLUJO)
+
+
+
+
+curl -X POST "http://127.0.0.1:5000/run-workflow" -H "Content-Type: application/json" -d "{\"batch_name\": \"OTRO_FLUJO\"}"
+
+Descripción: Este comando ejecuta el archivo OTRO_FLUJO.bat ubicado en la misma carpeta.
+Resultado esperado: Se ejecuta el flujo de trabajo definido en este archivo batch, devolviendo la salida del proceso.
+Consideraciones
+Los archivos batch deben estar ubicados en C:\knime_api_project y seguir la convención de nombres especificada (<nombre>.bat).
+
+
+Asegúrate de que el archivo batch esté configurado correctamente con la ruta al archivo .knwf y el ejecutable de KNIME.
+La API debe estar corriendo en el puerto 5000 y debe ser accesible desde la máquina que ejecuta los comandos.
